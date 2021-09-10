@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
+import os
+
 import akshare as ak
 import sqlite3 as sql
 import pandas as pd
@@ -18,6 +20,9 @@ def get_lateset_a_gu_list():
   sh_a = ak.stock_info_sh_name_code("主板A股")
   sh_kc = ak.stock_info_sh_name_code("科创板")
   sz_a = ak.stock_info_sz_name_code("A股列表")
+  if not os.path.exists('../database/'):
+    print('database dir not exist, create one')
+    os.mkdir('../database')
   with sql.connect('../database/stock_a_alive.db') as conn:
     sh_a.to_sql("SHANGHAI_A", conn, if_exists="replace")
     sh_kc.to_sql("SHANGHAI_KECHUANG", conn, if_exists="replace")
