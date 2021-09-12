@@ -37,13 +37,14 @@ def get_bk_part_data(stock_bk_part, start_date_str, end_date_str, bk_name):
         time.sleep(5)
     except:
       # 异常则先休息 10 秒，然后再试
-      print(f"EXCEPTION ON: {index}")
+      print(f"EXCEPTION ON: {stock_code}")
       print('----------- SLEEP 10s -----------')
       time.sleep(10)
       stock_zh_a_hist_df = ak.stock_zh_a_hist(symbol=stock_code, start_date=start_date_str, end_date=end_date_str, adjust="qfq")
       database_file = '../database/stock_a_history/'+ bk_name + '_history.db'
       with sql.connect(database_file) as conn:
-        stock_zh_a_hist_df.to_sql(stock_code, conn, if_exists="replace")
+        table_name = bk_name[:2] + stock_code
+        stock_zh_a_hist_df.to_sql(table_name, conn, if_exists="replace")
 
 
 # 获取某板块历史数据
@@ -72,7 +73,6 @@ def get_bk_stock_data_mp(stock_bk, start_date_str, end_date_str, bk_name):
   for p in process_list:
     p.join
   
-  print("IT'S DONE!")
 
 # 获取数据入口，mp 指多进程，默认是关的
 def get_a_stock_data(bk, start_date_str, end_date_str, mp=False):
