@@ -9,7 +9,7 @@ import sqlite3 as sql
 def get_data_and_write_database(stock, source_db_conn, merged_db_conn):
   sql_str = 'SELECT * FROM ' + stock
   # print(sql_str)
-  pd.read_sql(sql_str, source_db_conn).to_sql(stock[0], merged_db_conn, if_exists="replace")
+  pd.read_sql(sql_str, source_db_conn).to_sql(stock, merged_db_conn, if_exists="replace")
 
 def merge_db(dirpath, files, bk):
   for file in files:
@@ -39,5 +39,3 @@ if __name__=='__main__':
     
     for p in process_list:
       p.join
-
-                
