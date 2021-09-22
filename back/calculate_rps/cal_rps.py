@@ -101,6 +101,10 @@ if __name__=='__main__':
     remove_list = bk['company_code'].values.tolist()
     price_change_df = price_change_df[~price_change_df['company_code'].isin(remove_list)]
 
+  if not os.path.exists('../database/rps/price_change_no_new_st.db'):
+    print('rps dir not exist, create one')
+    os.mkdir('../database/rps/')
+    
   with sql.connect('../database/rps/price_change_no_new_st.db') as pc_test_conn:
     price_change_df.to_sql('test', pc_test_conn, if_exists='replace')
 
