@@ -12,13 +12,21 @@ def get_new_and_st(table, db_conn):
   # 筛选出不是一年内的新股且不为 ST
   # conditions = 'listing_date < date("now","-1 years") AND instr(company_abbr, "ST") = 0'
   # 筛选出上市不足一年或 ST
-  conditions = 'listing_date > date("now","-1 years") OR instr(company_abbr, "ST") = 1'
+  conditions = 'listing_date > date("now","-1 years") OR instr(company_abbr, "ST") > 0'
   sql_string = (f'SELECT {fields} '
                 f'FROM {table} '
                 f'WHERE {conditions};')
 
   stock_without_new_and_st = pd.read_sql(sql_string, db_conn)
   return stock_without_new_and_st
+
+def get_all_stock(table, db_conn):
+  fields = 'company_code, company_abbr'
+  sql_string = (f'SELECT {fields} '
+                f'FROM {table} ')
+  all_stock_with_abbr = pd.read_sql(sql_string, db_conn)
+  return all_stock_with_abbr
+
 
 def cal_price_change(rps_days):
   # RPS_DAYS = (5, 10, 20, 60, 120, 250)
@@ -74,33 +82,32 @@ def cal_price_change(rps_days):
         stocks_change_data.append(column_data)
   df = pd.DataFrame(np.array(stocks_change_data), columns=db_columns)
 
-  # change_db_dir_path = '../database/rps/'
-  # change_db_file = 'all_change'
-
-  # if not os.path.exists(change_db_dir_path):
-  #   print('rps dir not exist, create one')
-  #   os.mkdir(change_db_dir_path)
-  # with sql.connect(change_db_dir_path + change_db_file + '.db') as change_db_conn:
-  #   df.to_sql('change_pct', change_db_conn, if_exists="replace")
-
   return df
   
 if __name__=='__main__':
   # 计算所有股票的不同日子涨跌幅百分比
   RPS_DAYS = (5, 10, 20, 60, 120, 250)
   price_change_df = cal_price_change(RPS_DAYS)
+  
+  tables = ('sh_zhuban', 'sh_kechuangban', 'sz_zhuban', 'sz_chuangyeban')
 
-  # 筛选出 ST 和 上市不满一年的股票列表
+  
   with sql.connect('../database/stock_a.db') as conn:
-    tables = ('sh_zhuban', 'sh_kechuangban', 'sz_zhuban', 'sz_chuangyeban')
-    vectfunc = np.vectorize(get_new_and_st, cache=False)
-    stocks_ndarray = vectfunc(tables, conn)
+    # 获取所有股票代码和简称
+    get_all_stock_vfunc = np.vectorize(get_all_stock, cache=False)
+    stock_with_abbr = get_all_stock_vfunc(tables, conn)
+    # 筛选出 ST 和 上市不满一年的股票列表
+    get_new_and_st_vfunc = np.vectorize(get_new_and_st, cache=False)
+    stocks_ndarray = get_new_and_st_vfunc(tables, conn)
+
+  all_stock_with_abbr_df = pd.concat(stock_with_abbr, ignore_index=True)
 
   # 从所有股票的涨跌值表中去除 ST 和上市不满一年的
   for bk in stocks_ndarray:
     remove_list = bk['company_code'].values.tolist()
     price_change_df = price_change_df[~price_change_df['company_code'].isin(remove_list)]
-
+  
+  price_change_df = pd.merge(price_change_df, all_stock_with_abbr_df, on=['company_code'])
   if not os.path.exists('../database/rps/price_change_no_new_st.db'):
     print('rps dir not exist, create one')
     os.mkdir('../database/rps/')
@@ -130,13 +137,13 @@ if __name__=='__main__':
       #   new_df.to_sql('test', rps_test_conn, if_exists='replace')
     
     rps_x_df = pd.DataFrame({'company_code': company_code, f'rps_{rps}': rps_x})
-    print(index_rps)
     if index_rps == 0:
-      all_rps_df = rps_x_df
+      all_rps_df = pd.merge(all_stock_with_abbr_df, rps_x_df, on=['company_code'])
+      # all_rps_df = rps_x_df
     else:
       all_rps_df = pd.merge(all_rps_df, rps_x_df, on=['company_code'])
   
-  print(all_rps_df)
+  # print(all_rps_df)
   today = datetime.today().strftime('%Y%m%d')
   all_rps_df.to_excel(f'../database/rps/rps_{today}.xlsx')
   # print(new_df[['company_code', 'change_5_pct']])

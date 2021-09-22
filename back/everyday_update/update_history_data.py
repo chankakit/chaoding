@@ -14,19 +14,19 @@ import numpy as np
 import akshare as ak
 
 # 获取历史数据，参数：股票代码（'600000'），起始日期（'20200101'），结束日期（'20210101'）
-def get_stock_a_hist_and_write(stock_code, start_date_str, end_date_str, bk_name):
+def get_stock_a_hist_and_write(stock_code, start_date_str, end_date_str, bk_name, db_path):
   stock_zh_a_hist_df = ak.stock_zh_a_hist(symbol=stock_code, start_date=start_date_str, end_date=end_date_str, adjust="qfq")
-  database_file = '../database/stock_a_history/'+ bk_name + '_history.db'
+  database_file = db_path + bk_name + '_history.db'
   with sql.connect(database_file) as conn:
     table_name = bk_name[:2] + stock_code
     stock_zh_a_hist_df.to_sql(table_name, conn, if_exists="replace")
     
-def get_bk_part_data(stock_bk_part, start_date_str, end_date_str, bk_name):
+def get_bk_part_data(stock_bk_part, start_date_str, end_date_str, bk_name, db_path):
   total_length = len(stock_bk_part['company_code'])
   for index, stock_code in enumerate(stock_bk_part['company_code']):
     print(f'{index} - {round((index+1)/total_length*100, 2)}% | running at: {stock_code}.')
     try:
-      get_stock_a_hist_and_write(stock_code, start_date_str, end_date_str, bk_name)
+      get_stock_a_hist_and_write(stock_code, start_date_str, end_date_str, bk_name, db_path)
       if index % 30 == 29:
         # 每隔 30 只股票休息 5 秒，防封
         print('----------- SLEEP 5s -----------')
@@ -36,18 +36,18 @@ def get_bk_part_data(stock_bk_part, start_date_str, end_date_str, bk_name):
       print(f"EXCEPTION ON: {stock_code}")
       print('----------- SLEEP 10s -----------')
       time.sleep(10)
-      get_stock_a_hist_and_write(stock_code, start_date_str, end_date_str, bk_name)
+      get_stock_a_hist_and_write(stock_code, start_date_str, end_date_str, bk_name, db_path)
 
 
 # 获取某板块历史数据
 # 参数：板块股票列表（DataFrame），起始日期（'20200101'），结束日期（'20210101'），板块名称（'sh_zhuban'）
-def get_bk_stock_data(stock_bk, start_date_str, end_date_str, bk_name):
+def get_bk_stock_data(stock_bk, start_date_str, end_date_str, bk_name, db_path):
   # 按 company_code 列排序，即股票代号
   stock_bk.sort_values(by=['company_code'])
-  get_bk_part_data(stock_bk, start_date_str, end_date_str, bk_name)
+  get_bk_part_data(stock_bk, start_date_str, end_date_str, bk_name, db_path)
 
 
-def get_bk_stock_data_mp(stock_bk, start_date_str, end_date_str, bk_name):
+def get_bk_stock_data_mp(stock_bk, start_date_str, end_date_str, bk_name, db_path):
   # 按 company_code 列排序，即股票代号
   stock_bk.sort_values(by=['company_code'])
   # 8 是指每个板块的进程，4 个板块即会开 32 个进程，
@@ -58,7 +58,7 @@ def get_bk_stock_data_mp(stock_bk, start_date_str, end_date_str, bk_name):
   process_list = []
   
   for index, bk_part in enumerate(bk_query):
-    p = Process(target=get_bk_part_data, args=(bk_part, start_date_str, end_date_str, bk_name+'_'+str(index)))
+    p = Process(target=get_bk_part_data, args=(bk_part, start_date_str, end_date_str, bk_name+'_'+str(index), db_path))
     p.start()
     process_list.append(p)
 
@@ -72,9 +72,9 @@ def get_a_stock_data(bk, start_date_str, end_date_str, mp=False):
     sql_str = 'SELECT * FROM ' + bk
     bk_data = pd.read_sql(sql_str, conn0)
     if mp:
-      get_bk_stock_data_mp(bk_data, start_date_str, end_date_str, bk)
+      get_bk_stock_data_mp(bk_data, start_date_str, end_date_str, bk, '../database/stock_a_history/blocks/')
     else:
-      get_bk_stock_data(bk_data, start_date_str, end_date_str, bk)
+      get_bk_stock_data(bk_data, start_date_str, end_date_str, bk, '../database/stock_a_history/')
 
 if __name__=='__main__':
   start_date = '20200101'  # 数据起始日期
@@ -83,6 +83,10 @@ if __name__=='__main__':
   if not os.path.exists('../database/stock_a_history/'):
     print('stock_a_history dir not exist, create one')
     os.mkdir('../database/stock_a_history/')
+    
+  if not os.path.exists('../database/stock_a_history/blocks/'):
+    print('stock_a_history mp dir not exist, create one')
+    os.mkdir('../database/stock_a_history/blocks/')
 
   # 板块名称列表，按 update_china_a.py 里面决定
   bks = ('sh_zhuban', 'sh_kechuangban', 'sz_zhuban', 'sz_chuangyeban')

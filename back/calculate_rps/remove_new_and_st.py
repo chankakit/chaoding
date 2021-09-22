@@ -12,7 +12,7 @@ def get_all_stock_without_new_and_st(table, db_conn):
   # 筛选出不是一年内的新股且不为 ST
   # conditions = 'listing_date < date("now","-1 years") AND instr(company_abbr, "ST") = 0'
   # 筛选出上市不足一年或 ST
-  conditions = 'listing_date > date("now","-1 years") OR instr(company_abbr, "ST") = 1'
+  conditions = 'listing_date > date("now","-1 years") OR instr(company_abbr, "ST") > 0'
   sql_string = (f'SELECT {fields} '
                 f'FROM {table} '
                 f'WHERE {conditions};')
