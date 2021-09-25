@@ -17,11 +17,7 @@ if __name__=='__main__':
   # 日期
   start_date = '20200101'  # 数据起始日期
   end_date = datetime.today().strftime('%Y%m%d')  # 数据结束日期
-
-  # 板块名称列表，按 update_a_stock.py 里面决定
-  bks = ('sh_zhuban', 'sh_kechuangban', 'sz_zhuban', 'sz_chuangyeban')
-  for bk in bks:
-    update_history_data.get_a_stock_data(bk, start_date, end_date, True)
+  update_history_data.get_a_stock_data(start_date, end_date, True)
 
   print('merge database blocks')
   merge_database.merge_db_entrance()
