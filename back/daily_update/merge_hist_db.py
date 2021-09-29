@@ -22,7 +22,7 @@ def merge_db_entrance():
       process_list.append(p)
     
     for p in process_list:
-      p.join
+      p.join()
 
 def get_data_and_write_database(stock, source_db_conn, merged_db_conn):
   sql_str = 'SELECT * FROM ' + stock
@@ -37,6 +37,7 @@ def merge_db(blocks_dirpath, files, bk, merged_dirpath):
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         stocks = cursor.fetchall()
+        # print(stocks)
         with sql.connect(merged_dirpath + bk + '.db') as merged_conn:
           for stock in stocks:
             get_data_and_write_database(stock[0], conn, merged_conn)

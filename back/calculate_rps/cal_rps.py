@@ -29,7 +29,6 @@ def get_all_stock(table, db_conn):
 
 
 def cal_price_change(rps_days):
-  # RPS_DAYS = (5, 10, 20, 60, 120, 250)
   # 构造列
   # ['company_code', 'bk', 'change_5_pct', 'change_10_pct', 'change_20_pct', 'change_60_pct', 'change_120_pct', 'change_250_pct']
   db_columns = ['company_code', 'bk']

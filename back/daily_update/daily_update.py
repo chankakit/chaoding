@@ -3,7 +3,7 @@
 
 import update_a_stock
 import update_history_data
-import merge_database
+import merge_hist_db
 from datetime import datetime
 
 
@@ -20,4 +20,4 @@ if __name__=='__main__':
   update_history_data.get_a_stock_data(start_date, end_date, True)
 
   print('merge database blocks')
-  merge_database.merge_db_entrance()
+  merge_hist_db.merge_db_entrance()
